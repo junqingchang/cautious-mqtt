@@ -1,10 +1,24 @@
+'''
+Chang Jun Qing 1002088
+
+Usage:
+python clientSkeleton.py
+runs client as genericuser
+
+python clientSkeleton.py <personalised username>
+run client as <personalised username>
+'''
+
 import paho.mqtt.client as mqtt
 import time
 import cmd
 import sys
 import select
 
-username = "zf2sHjr"
+if len(sys.argv) == 2:
+    username = sys.argv[1]
+else:
+    username = "genericuser"
 broker = "test.mosquitto.org"
 port = 1883
 dchannels = ['hello/world', 'user/{}'.format(username)]
@@ -32,13 +46,31 @@ class cli(cmd.Cmd):
         "send hello message to user/<person>"
         if person:
             greeting = "hello {}".format(person)
+            print("Sending {} to {}".format(greeting, "user/{}".format(person)))
+            mqttc = mqtt.Client("python_pub")
+            mqttc.connect(broker, port)
+            mqttc.publish("user/{}".format(person), greeting)
+            mqttc.loop(2)
         else:
             greeting = 'hello'
-        print("Sending {} to {}".format(greeting, "user/{}".format(person)))
-        mqttc = mqtt.Client("python_pub")
-        mqttc.connect(broker, port)
-        mqttc.publish("user/{}".format(person), greeting)
-        mqttc.loop(2)
+            print("Sending {} to ".format(greeting, "user/#"))
+            mqttc = mqtt.Client("python_pub")
+            mqttc.connect(broker, port)
+            mqttc.publish("user/#", greeting)
+            mqttc.loop(2)
+
+    def do_pmsg(self, person_message):
+        "send personalised <message> to user/<person> in the form <person>|<message>"
+        try:
+            message = person_message.split("|")[1]
+            person = person_message.split("|")[0]
+            print("Sending {} to {}".format(message, "user/{}".format(person)))
+            mqttc = mqtt.Client("python_pub")
+            mqttc.connect(broker, port)
+            mqttc.publish("user/{}".format(person), message)
+            mqttc.loop(2)
+        except:
+            print("Must enter person|message")
 
     def do_quit(self, line):
         "exit client"
